@@ -17,10 +17,10 @@ void ThreadPool::emplace (std::function<bool()> function)
     {
         std::unique_lock<std::mutex> lock(m);
         cvQueue.wait(lock, [this] {
-            return taskQueue.size() < numOfThreads * 2;
+            return taskQueue.size() < numOfThreads * 2 || end;
         });
+        if (end) return;
         taskQueue.emplace(function);
-        std::cout << "Queue size: " << taskQueue.size() << std::endl;
     }
     cvTask.notify_one();
 }
@@ -28,6 +28,7 @@ void ThreadPool::emplace (std::function<bool()> function)
 void ThreadPool::join ()
 {
     end = true;
+    cvQueue.notify_all();
     cvTask.notify_all();
     for (auto &thread : threads)
     {
@@ -41,9 +42,7 @@ void ThreadPool::workerLoop (int i)
     {
         std::function<bool()> task;
         {
-            std::cout << i << " ";
             std::unique_lock<std::mutex> lock(m);
-            std::cout << "IM LOCKED " << i << std::endl;
             cvTask.wait(lock, [this] {
                 return !taskQueue.empty() || end;
             });
@@ -52,13 +51,12 @@ void ThreadPool::workerLoop (int i)
             
             task = taskQueue.front();
             taskQueue.pop();
-            end = task();
-            //if (end) return;
-            if (end) {
-                cvTask.notify_all();
-            };
-            cvQueue.notify_one();
         }
+        bool finished = task();
+        if (finished) {
+            end = true;
+        };
+        cvQueue.notify_one();
     }
 }
 

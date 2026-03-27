@@ -15,7 +15,6 @@ class MiniDownloader
     std::string fileName;
     bool partialDownloadAllowed;
     size_t partSize;
-    CURL *curl;
     ThreadPool* threadPool;
 
     bool partialDownload(int part);

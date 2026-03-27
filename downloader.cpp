@@ -6,18 +6,18 @@ MiniDownloader::MiniDownloader (std::string url, std::string fileName) :
     partialDownloadAllowed(false),
     partSize(2 * 1024 * 1024),
     threadPool(new ThreadPool((size_t)4))
-{
-    curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, saveToFile);
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-}
+{}
 
 bool MiniDownloader::partialDownload(int part)
 {
     std::string partialFileName = prepareFileName(fileName, part);
     std::string range = std::to_string(part * partSize) + "-" + std::to_string((part + 1) * partSize -1);
      
+    CURL* curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, saveToFile);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
     FILE* file = fopen(partialFileName.c_str(), "wb");
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
     curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
